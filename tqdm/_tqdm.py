@@ -130,7 +130,7 @@ class tqdm(object):
     monitor = None
 
     @staticmethod
-    def format_sizeof(num, suffix=''):
+    def format_sizeof(num, suffix='', divisor=1000):
         """
         Formats a number (greater than unity) with SI Order of Magnitude
         prefixes.
@@ -141,6 +141,8 @@ class tqdm(object):
             Number ( >= 1) to format.
         suffix  : str, optional
             Post-postfix [default: ''].
+        divisor  : float, optionl
+            Divisor between prefixes [default: 1000].
 
         Returns
         -------
@@ -154,7 +156,7 @@ class tqdm(object):
                         return '{0:1.2f}'.format(num) + unit + suffix
                     return '{0:2.1f}'.format(num) + unit + suffix
                 return '{0:3.0f}'.format(num) + unit + suffix
-            num /= 1000.0
+            num /= divisor
         return '{0:3.1f}Y'.format(num) + suffix
 
     @staticmethod
@@ -203,7 +205,7 @@ class tqdm(object):
     @staticmethod
     def format_meter(n, total, elapsed, ncols=None, prefix='',
                      ascii=False, unit='it', unit_scale=False, rate=None,
-                     bar_format=None, postfix=None):
+                     bar_format=None, postfix=None, unit_divisor=1000):
         """
         Return a string-based progress bar given some parameters
 
@@ -246,6 +248,8 @@ class tqdm(object):
             rate, rate_fmt, elapsed, remaining, l_bar, r_bar, desc.
         postfix  : str, optional
             Same as prefix but will be placed at the end as additional stats.
+        unit_divisor  : float, optional
+            [default: 1000], ignored unless `unit_scale` is True.
 
         Returns
         -------
@@ -272,8 +276,9 @@ class tqdm(object):
             + ('s' if inv_rate else unit) + '/' + (unit if inv_rate else 's')
 
         if unit_scale:
-            n_fmt = format_sizeof(n)
-            total_fmt = format_sizeof(total) if total else None
+            n_fmt = format_sizeof(n, divisor=unit_divisor)
+            total_fmt = format_sizeof(total, divisor=unit_divisor) \
+                    if total else None
         else:
             n_fmt = str(n)
             total_fmt = str(total)
@@ -411,7 +416,7 @@ class tqdm(object):
                 cls.monitor.exit()
                 try:
                     del cls.monitor
-                except AttributeError:
+                except AttributeError:  # pragma: no cover
                     pass
                 cls.monitor = None
         except KeyError:
@@ -552,7 +557,7 @@ class tqdm(object):
                  maxinterval=10.0, miniters=None, ascii=None, disable=False,
                  unit='it', unit_scale=False, dynamic_ncols=False,
                  smoothing=0.3, bar_format=None, initial=0, position=None,
-                 postfix=None,
+                 postfix=None, unit_divisor=1000,
                  gui=False, **kwargs):
         """
         Parameters
@@ -634,6 +639,8 @@ class tqdm(object):
             Useful to manage multiple bars at once (eg, from threads).
         postfix  : dict, optional
             Specify additional stats to display at the end of the bar.
+        unit_divisor  : float, optional
+            [default: 1000], ignored unless `unit_scale` is True.
         gui  : bool, optional
             WARNING: internal parameter - do not use.
             Use tqdm_gui(...) instead. If set, will attempt to use
@@ -716,6 +723,7 @@ class tqdm(object):
         self.disable = disable
         self.unit = unit
         self.unit_scale = unit_scale
+        self.unit_divisor = unit_divisor
         self.gui = gui
         self.dynamic_ncols = dynamic_ncols
         self.smoothing = smoothing
@@ -742,7 +750,7 @@ class tqdm(object):
             self.sp(self.format_meter(self.n, total, 0,
                     (dynamic_ncols(file) if dynamic_ncols else ncols),
                     self.desc, ascii, unit, unit_scale, None, bar_format,
-                    self.postfix))
+                    self.postfix, unit_divisor))
             if self.pos:
                 self.moveto(-self.pos)
 
@@ -814,6 +822,7 @@ class tqdm(object):
             dynamic_miniters = self.dynamic_miniters
             unit = self.unit
             unit_scale = self.unit_scale
+            unit_divisor = self.unit_divisor
             ascii = self.ascii
             start_t = self.start_t
             last_print_t = self.last_print_t
@@ -863,7 +872,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                              else ncols),
                             self.desc, ascii, unit, unit_scale,
                             1 / avg_time if avg_time else None, bar_format,
-                            self.postfix))
+                            self.postfix, unit_divisor))
 
                         if self.pos:
                             self.moveto(-self.pos)
@@ -959,7 +968,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                      else self.ncols),
                     self.desc, self.ascii, self.unit, self.unit_scale,
                     1 / self.avg_time if self.avg_time else None,
-                    self.bar_format, self.postfix))
+                    self.bar_format, self.postfix, self.unit_divisor))
 
                 if self.pos:
                     self.moveto(-self.pos)
@@ -1031,7 +1040,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                     (self.dynamic_ncols(self.fp) if self.dynamic_ncols
                      else self.ncols),
                     self.desc, self.ascii, self.unit, self.unit_scale, None,
-                    self.bar_format, self.postfix))
+                    self.bar_format, self.postfix, self.unit_divisor))
             if pos:
                 self.moveto(-pos)
             else:
