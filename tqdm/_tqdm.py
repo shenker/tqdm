@@ -838,10 +838,10 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
 
             for obj in iterable:
                 yield obj
-                # Update and print the progressbar.
+                # Update and possibly print the progressbar.
                 # Note: does not call self.update(1) for speed optimisation.
                 n += 1
-                # check the counter first (avoid calls to time())
+                # check counter first to avoid calls to time()
                 if n - last_print_n >= self.miniters:
                     miniters = self.miniters  # watch monitoring thread changes
                     delta_t = _time() - last_print_t
@@ -859,7 +859,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                         if self.pos:
                             self.moveto(self.pos)
 
-                        # Printing the bar's update
+                        # Print bar update
                         sp(format_meter(
                             n, self.total, elapsed,
                             (dynamic_ncols(self.fp) if dynamic_ncols
@@ -926,6 +926,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
             Increment to add to the internal counter of iterations
             [default: 1].
         """
+        # N.B.: see __iter__() for more comments.
         if self.disable:
             return
 
@@ -933,12 +934,12 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
             raise ValueError("n ({0}) cannot be negative".format(n))
         self.n += n
 
+        # check counter first to reduce calls to time()
         if self.n - self.last_print_n >= self.miniters:
-            # We check the counter first, to reduce the overhead of time()
             delta_t = self._time() - self.last_print_t
             if delta_t >= self.mininterval:
                 cur_t = self._time()
-                delta_it = self.n - self.last_print_n  # should be n?
+                delta_it = self.n - self.last_print_n  # >= n
                 elapsed = cur_t - self.start_t
                 # EMA (not just overall average)
                 if self.smoothing and delta_t and delta_it:
@@ -955,14 +956,14 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                 if self.pos:
                     self.moveto(self.pos)
 
-                # Print bar's update
+                # Print bar update
                 self.sp(self.__repr__())
 
                 if self.pos:
                     self.moveto(-self.pos)
 
                 # If no `miniters` was specified, adjust automatically to the
-                # maximum iteration rate seen so far between two prints.
+                # maximum iteration rate seen so far between 2 prints
                 # e.g.: After running `tqdm.update(5)`, subsequent
                 # calls to `tqdm.update()` will only cause an update after
                 # at least 5 more iterations.
@@ -1053,6 +1054,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
         Set/modify description of the progress bar.
         """
         self.desc = desc + ': ' if desc else ''
+        self.update(0)
 
     def set_postfix(self, ordered_dict=None, **kwargs):
         """
@@ -1075,6 +1077,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
         # Stitch together to get the final postfix
         self.postfix = ', '.join(key + '=' + postfix[key].strip()
                                  for key in postfix.keys())
+        self.update(0)
 
     def moveto(self, n):
         self.fp.write(_unicode('\n' * n + _term_move_up() * -n))
