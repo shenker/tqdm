@@ -1541,13 +1541,24 @@ def test_postfix():
         assert res in out
         assert res in out2
 
-    # Test postfix set after init and with ordered dict
+    # Test postfix (with ordered dict and no refresh) set after init
     with closing(StringIO()) as our_file:
         with trange(10, file=our_file, desc='pos2 bar',
                     bar_format='{r_bar}', postfix=None) as t3:
-            t3.set_postfix(postfix_order, **postfix)
-            t3.refresh()
+            t3.set_postfix(postfix_order, False, **postfix)
+            t3.refresh()  # explicit external refresh
             out3 = our_file.getvalue()
 
     out3 = out3[1:-1].split(', ')[3:]
     assert out3 == expected_order
+
+    # Test postfix (with ordered dict and refresh) set after init
+    with closing(StringIO()) as our_file:
+        with trange(10, file=our_file, desc='pos2 bar',
+                    bar_format='{r_bar}', postfix=None) as t4:
+            t4.set_postfix(postfix_order, True, **postfix)
+            t4.refresh()  # double refresh
+            out4 = our_file.getvalue()
+
+    assert out4.count('\r') > out3.count('\r')
+    assert out4.count(", ".join(expected_order)) == 2

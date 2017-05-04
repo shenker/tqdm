@@ -724,7 +724,7 @@ class tqdm(object):
         self.bar_format = bar_format
         self.postfix = None
         if postfix:
-            self.set_postfix(**postfix)
+            self.set_postfix(refresh=False, **postfix)
 
         # Init the iterations counters
         self.last_print_n = initial
@@ -922,7 +922,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
 
         Parameters
         ----------
-        n  : int
+        n  : int, optional
             Increment to add to the internal counter of iterations
             [default: 1].
         """
@@ -1049,17 +1049,29 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
         self.start_t += cur_t - self.last_print_t
         self.last_print_t = cur_t
 
-    def set_description(self, desc=None):
+    def set_description(self, desc=None, refresh=True):
         """
         Set/modify description of the progress bar.
+
+        Parameters
+        ----------
+        desc  : str, optional
+        refresh  : bool, optional
+            Forces refresh [default: True].
         """
         self.desc = desc + ': ' if desc else ''
-        self.update(0)
+        if refresh:
+            self.refresh()
 
-    def set_postfix(self, ordered_dict=None, **kwargs):
+    def set_postfix(self, ordered_dict=None, refresh=True, **kwargs):
         """
         Set/modify postfix (additional stats)
         with automatic formatting based on datatype.
+
+        Parameters
+        ----------
+        refresh  : bool, optional
+            Forces refresh [default: True].
         """
         # Sort in alphabetical order to be more deterministic
         postfix = _OrderedDict([] if ordered_dict is None else ordered_dict)
@@ -1077,7 +1089,8 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
         # Stitch together to get the final postfix
         self.postfix = ', '.join(key + '=' + postfix[key].strip()
                                  for key in postfix.keys())
-        self.update(0)
+        if refresh:
+            self.refresh()
 
     def moveto(self, n):
         self.fp.write(_unicode('\n' * n + _term_move_up() * -n))
