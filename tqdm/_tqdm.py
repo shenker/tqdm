@@ -479,6 +479,7 @@ class tqdm(object):
         progress-indicator-during-pandas-operations-python
         """
         from pandas.core.frame import DataFrame
+        from pandas.core.index import Index
         from pandas.core.series import Series
         from pandas.core.groupby import DataFrameGroupBy
         from pandas.core.groupby import SeriesGroupBy
@@ -493,7 +494,7 @@ class tqdm(object):
                 """
                 Parameters
                 ----------
-                df  : (DataFrame|Series)[GroupBy]
+                df  : (DataFrame|Series|Index)[GroupBy]
                     Data (may be grouped).
                 func  : function
                     To be applied on the (grouped) data.
@@ -503,8 +504,10 @@ class tqdm(object):
                 # Precompute total iterations
                 total = getattr(df, 'ngroups', None)
                 if total is None:  # not grouped
-                    total = len(df) if isinstance(df, Series) \
-                        else df.size // len(df)
+                    if isinstance(df, Series) or isinstance(df, Index):
+                        total = len(df)
+                    else:
+                        total = df.size // len(df)
                 else:
                     total += 1  # pandas calls update once too many
 
@@ -535,6 +538,9 @@ class tqdm(object):
         SeriesGroupBy.progress_apply = inner_generator()
         Series.progress_map = inner_generator('map')
         SeriesGroupBy.progress_map = inner_generator('map')
+
+        Index.progress_apply = inner_generator()
+        Index.progress_map = inner_generator('map')
 
         DataFrame.progress_apply = inner_generator()
         DataFrameGroupBy.progress_apply = inner_generator()
